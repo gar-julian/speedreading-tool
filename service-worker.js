@@ -24,6 +24,10 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === 'openSidePanel') {
     // This will open the panel in all the pages on the current window.
     chrome.sidePanel.open({ windowId: tab.windowId });
+    // If the panel was already open, tell it to re-read the newly granted tab.
+    chrome.runtime
+      .sendMessage({ type: 'refresh_title' })
+      .catch(() => {});
   }
 });
 
@@ -40,4 +44,11 @@ chrome.runtime.onMessage.addListener((message, sender) => {
       });
     }
   })();
+});
+
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  if (info.menuItemId === 'openSidePanel') {
+    chrome.sidePanel.open({ windowId: tab.windowId });
+    chrome.runtime.sendMessage({ type: 'refresh_title' }).catch(() => {}); // panel may not be open yet
+  }
 });
