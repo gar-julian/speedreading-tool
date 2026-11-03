@@ -16,6 +16,10 @@
       "matches": ["https://www.google.com/*"]
     }
   ],
+  "action": {
+    "default_title": "Open side panel", 
+    "default_icon": { "16": "hello_extensions.png"}
+  }, 
   "permissions": ["sidePanel", "contextMenus"],
   "icons": {
     "16": "hello_extensions.png"
