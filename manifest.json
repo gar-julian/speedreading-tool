@@ -16,7 +16,7 @@
       "matches": ["https://www.google.com/*"]
     }
   ],
-  "permissions": ["sidePanel", "contextMenus"],
+  "permissions": ["sidePanel", "contextMenus", "activeTab"], 
   "icons": {
     "16": "hello_extensions.png"
   }
