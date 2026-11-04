@@ -1,22 +1,20 @@
 {
   "manifest_version": 3,
-  "name": "Open side panel",
-  "version": "1.0",
-  "description": "Shows how to call sidePanel.open() to open a global side panel.",
+  "name": "Flashing words at you",
+  "version": "1.2",
+  "description": "Saves the page's HTML and flashes its words at you in a new tab.",
   "minimum_chrome_version": "116",
+
+  "action": {
+    "default_title": "Speed read this page"
+  },
+
   "background": {
     "service_worker": "service-worker.js"
   },
-  "side_panel": {
-    "default_path": "sidepanel-global.html"
-  },
-  "content_scripts": [
-    {
-      "js": ["content-script.js"],
-      "matches": ["https://www.google.com/*"]
-    }
-  ],
-  "permissions": ["sidePanel", "contextMenus"],
+
+  "permissions": ["activeTab", "scripting", "storage", "downloads"],
+
   "icons": {
     "16": "hello_extensions.png"
   }

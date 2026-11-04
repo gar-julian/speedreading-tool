@@ -1,0 +1,57 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Speed reader</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        max-width: 600px;
+        margin: 60px auto;
+        padding: 0 16px;
+        background: #fafafa;
+        color: #222;
+      }
+      #title { font-size: 14px; color: #666; margin: 0 0 12px; }
+      #stage {
+        height: 180px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 48px;
+        font-weight: 600;
+      }
+      .pivot { color: #d33; } /* the letter your eye locks onto */
+      #progress { height: 4px; background: #eee; margin: 8px 0 16px; border-radius: 2px; }
+      #bar { height: 100%; width: 0; background: #d33; border-radius: 2px; }
+      .row { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+      button { flex: 1; padding: 10px; font-size: 15px; cursor: pointer; }
+      input[type=range] { flex: 1; }
+      #msg { font-size: 14px; color: #a00; }
+    </style>
+  </head>
+  <body>
+    <p id="title">Loading…</p>
+
+    <div id="stage"><span id="word">Ready</span></div>
+    <div id="progress"><div id="bar"></div></div>
+
+    <div class="row">
+      <button id="play">Play</button>
+      <button id="restart">Restart</button>
+    </div>
+
+    <div class="row">
+      <label for="wpm">Speed</label>
+      <input id="wpm" type="range" min="100" max="800" step="25" value="300" />
+      <span id="wpmLabel">300 wpm</span>
+    </div>
+
+    <p id="msg"></p>
+
+    <script src="reader.js"></script>
+  </body>
+</html>
