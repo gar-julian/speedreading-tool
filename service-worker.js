@@ -14,8 +14,8 @@
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
-    id: 'openSidePanel',
-    title: 'Open side panel',
+    id: 'openSidePanel',        // references the button
+    title: 'Open side panel',   // extension name
     contexts: ['all']
   });
 });
