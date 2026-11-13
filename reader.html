@@ -30,6 +30,17 @@
       .row { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
       button { flex: 1; padding: 10px; font-size: 15px; cursor: pointer; }
       input[type=range] { flex: 1; }
+      #prompt {
+        margin: 0 0 12px;
+        padding: 12px 14px;
+        background: #fff6e8;
+        border: 1px solid #e2c08a;
+        border-radius: 8px;
+        font-size: 15px;
+        line-height: 1.4;
+        color: #5c3d08;
+      }
+      #prompt[hidden] { display: none; }
       #msg { font-size: 14px; color: #a00; }
     </style>
   </head>
@@ -38,6 +49,8 @@
 
     <div id="stage"><span id="word">Ready</span></div>
     <div id="progress"><div id="bar"></div></div>
+
+    <p id="prompt" hidden></p>
 
     <div class="row">
       <button id="play">Play</button>
