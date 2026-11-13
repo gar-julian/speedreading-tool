@@ -1,4 +1,4 @@
-// The reader tab: takes the saved HTML, pulls out the text, flashes it.
+// The side panel: takes the page text the service worker saved, and flashes it.
 
 const wordEl = document.getElementById('word');
 const titleEl = document.getElementById('title');
@@ -13,20 +13,78 @@ let words = [];
 let index = 0;
 let timer = null;
 
-// --- 1. Get the HTML the service worker saved ---------------------------
+// --- 1. Get the text the service worker saved ---------------------------
+// The panel often opens before the capture finishes. It asks the worker for
+// the page (that call waits until the capture is done) and also accepts a
+// later push. A slow "loading" update must not replace the finished text.
 
-chrome.storage.session.get('page').then(({ page }) => {
-  if (!page || page.error || !page.html) {
+let appliedToken = -1;
+let appliedReady = false;
+
+function applyPage(page) {
+  const token = Number.isFinite(page?.token) ? page.token : appliedToken;
+  if (token < appliedToken) return;
+  if (token === appliedToken && appliedReady && page?.loading) return;
+  appliedToken = token;
+  appliedReady = Boolean(page) && !page.loading;
+
+  pause();
+  index = 0;
+  words = [];
+
+  if (page?.loading) {
+    titleEl.textContent = page.title || 'Reading page…';
+    msgEl.textContent = '';
+    show('…');
+    return;
+  }
+
+  const text = pageText(page);
+  if (!text) {
     titleEl.textContent = page?.title || '';
-    msgEl.textContent = "Couldn't read that page (Chrome blocks extensions on chrome:// pages and the Web Store).";
+    msgEl.textContent = page ? readError(page) : 'Click the extension icon on a page to start reading.';
     show('—');
     return;
   }
 
-  const text = textFromHtml(page.html);
+  msgEl.textContent = '';
   words = text.split(/\s+/).filter(Boolean);
   titleEl.textContent = `${page.title} · ${words.length} words`;
   show(words[0] || '—');
+}
+
+function pageText(page) {
+  if (!page || page.loading || page.error) return '';
+  if (typeof page.text === 'string') return page.text;
+  if (typeof page.html === 'string') return textFromHtml(page.html);
+  return '';
+}
+
+function readError(page) {
+  const error = page.error || '';
+  if (/cannot access contents|cannot be scripted|extensions gallery|chrome:\/\//i.test(error)) {
+    return "Couldn't read that page (Chrome blocks extensions on chrome:// pages and the Web Store).";
+  }
+  return error || "Couldn't read that page.";
+}
+
+function pullPage() {
+  chrome.runtime.sendMessage({ type: 'get-page' }, (response) => {
+    if (chrome.runtime.lastError) return;
+    applyPage(response?.page);
+  });
+}
+
+pullPage();
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== 'session' || !changes.page) return;
+  if (changes.page.newValue) applyPage(changes.page.newValue);
+  else pullPage();
+});
+
+chrome.runtime.onMessage.addListener((message) => {
+  if (message?.type === 'page-ready') applyPage(message.page);
 });
 
 // --- 2. Turn the HTML string into readable text -------------------------
@@ -56,7 +114,23 @@ function show(word) {
     `<span class="pivot">${escape(word[p] || '')}</span>` +
     escape(word.slice(p + 1));
   barEl.style.width = words.length ? `${(index / words.length) * 100}%` : '0';
+  fitWord();
 }
+
+// The side panel is narrow, so shrink a long word until it fits on one line.
+function fitWord() {
+  const stage = document.getElementById('stage');
+  const max = stage.clientWidth - 24;
+  if (max <= 0) return;
+  let size = 40;
+  wordEl.style.fontSize = size + 'px';
+  while (size > 14 && wordEl.scrollWidth > max) {
+    size -= 1;
+    wordEl.style.fontSize = size + 'px';
+  }
+}
+
+window.addEventListener('resize', fitWord);
 
 function tick() {
   if (index >= words.length) return pause();
