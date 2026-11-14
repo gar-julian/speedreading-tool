@@ -8,10 +8,14 @@ const restartBtn = document.getElementById('restart');
 const wpmInput = document.getElementById('wpm');
 const wpmLabel = document.getElementById('wpmLabel');
 const msgEl = document.getElementById('msg');
+const promptEl = document.getElementById('prompt');
 
-let words = [];
-let index = 0;
+let paragraphs = [];
+let paraIndex = 0;
+let wordIndex = 0;
 let timer = null;
+let waitingForParagraph = false;
+let pageTitle = '';
 
 // --- 1. Get the text the service worker saved ---------------------------
 // The panel often opens before the capture finishes. It asks the worker for
@@ -98,11 +102,45 @@ function textFromHtml(html) {
     .map((p) => p.textContent.trim().replace(/\s+/g, ' '))
     .filter((t) => t.split(' ').length > 4); // skip captions, buttons, etc.
 
-  if (paragraphs.length) return paragraphs.join(' ');
+  if (paragraphs.length) return paragraphs.map(toWords);
 
   // No <p> tags? Fall back to all the body text, minus scripts/styles.
   doc.querySelectorAll('script, style, noscript').forEach((el) => el.remove());
-  return doc.body ? doc.body.textContent : '';
+  const text = doc.body ? doc.body.textContent : '';
+  const chunks = text
+    .split(/\n\s*\n/)
+    .map((t) => t.trim().replace(/\s+/g, ' '))
+    .filter((t) => t.split(' ').length > 4);
+  if (chunks.length) return chunks.map(toWords);
+
+  const one = text.trim().replace(/\s+/g, ' ');
+  return one ? [toWords(one)] : [];
+}
+
+function toWords(text) {
+  return text.split(/\s+/).filter(Boolean);
+}
+
+function totalWords() {
+  return paragraphs.reduce((n, para) => n + para.length, 0);
+}
+
+function wordsFinished() {
+  let n = wordIndex;
+  for (let i = 0; i < paraIndex; i++) n += paragraphs[i].length;
+  return n;
+}
+
+function updateTitle() {
+  const total = totalWords();
+  const count = paragraphs.length;
+  let label = '';
+  if (count) {
+    label = waitingForParagraph
+      ? ` · paragraph ${paraIndex} of ${count} done`
+      : ` · paragraph ${Math.min(paraIndex + 1, count)} of ${count}`;
+  }
+  titleEl.textContent = `${pageTitle} · ${total} words${label}`;
 }
 
 // --- 3. Flash the words -------------------------------------------------
@@ -128,15 +166,25 @@ function fitWord() {
     size -= 1;
     wordEl.style.fontSize = size + 'px';
   }
+  const total = totalWords();
+  barEl.style.width = total ? `${(wordsFinished() / total) * 100}%` : '0';
 }
 
 window.addEventListener('resize', fitWord);
 
 function tick() {
-  if (index >= words.length) return pause();
-  const word = words[index];
+  if (paraIndex >= paragraphs.length) return finish();
+  const para = paragraphs[paraIndex];
+  if (wordIndex >= para.length) {
+    paraIndex++;
+    wordIndex = 0;
+    if (paraIndex >= paragraphs.length) return finish();
+    return pauseForParagraph();
+  }
+
+  const word = para[wordIndex];
   show(word);
-  index++;
+  wordIndex++;
 
   let delay = 60000 / Number(wpmInput.value);
   if (word.length > 8) delay *= 1.3;
@@ -147,16 +195,66 @@ function tick() {
 }
 
 function play() {
-  if (!words.length) return;
-  if (index >= words.length) index = 0;
+  if (!totalWords()) return;
+  if (paraIndex >= paragraphs.length) {
+    paraIndex = 0;
+    wordIndex = 0;
+  }
+  waitingForParagraph = false;
+  hidePrompt();
   playBtn.textContent = 'Pause';
+  updateTitle();
   tick();
 }
 
 function pause() {
   clearTimeout(timer);
   timer = null;
+  // The last word is already counted, so stopping here is the paragraph break.
+  if (isAtParagraphEnd()) {
+    paraIndex++;
+    wordIndex = 0;
+    if (paraIndex >= paragraphs.length) return finish();
+    return pauseForParagraph();
+  }
+  waitingForParagraph = false;
+  hidePrompt();
   playBtn.textContent = 'Play';
+}
+
+function isAtParagraphEnd() {
+  const para = paragraphs[paraIndex];
+  return Boolean(para) && wordIndex >= para.length;
+}
+
+function pauseForParagraph() {
+  clearTimeout(timer);
+  timer = null;
+  waitingForParagraph = true;
+  playBtn.textContent = 'Continue';
+  updateTitle();
+  showPrompt(
+    `Paragraph ${paraIndex} of ${paragraphs.length} is done. Continue when you're ready.`
+  );
+}
+
+function finish() {
+  clearTimeout(timer);
+  timer = null;
+  waitingForParagraph = false;
+  playBtn.textContent = 'Play';
+  updateTitle();
+  showPrompt('Finished. Press Play to read it again.');
+}
+
+function showPrompt(text) {
+  promptEl.hidden = false;
+  promptEl.textContent = text;
+}
+
+function hidePrompt() {
+  promptEl.hidden = true;
+  promptEl.textContent = '';
 }
 
 // --- Controls -----------------------------------------------------------
@@ -164,9 +262,15 @@ function pause() {
 playBtn.addEventListener('click', () => (timer ? pause() : play()));
 
 restartBtn.addEventListener('click', () => {
-  pause();
-  index = 0;
-  if (words.length) show(words[0]);
+  clearTimeout(timer);
+  timer = null;
+  waitingForParagraph = false;
+  hidePrompt();
+  playBtn.textContent = 'Play';
+  paraIndex = 0;
+  wordIndex = 0;
+  updateTitle();
+  if (paragraphs.length) show(paragraphs[0][0]);
 });
 
 wpmInput.addEventListener('input', () => {
