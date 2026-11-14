@@ -50,20 +50,29 @@
         --error: #ff7b7b;
       }
 
+      * { box-sizing: border-box; }
+      html, body { height: 100%; }
       body {
         font-family: system-ui, sans-serif;
-        max-width: 600px;
-        margin: 60px auto;
-        padding: 0 16px;
+        margin: 0;
+        padding: 12px;
         background: var(--bg);
         color: var(--text);
       }
-      header { display: flex; align-items: center; gap: 12px; margin: 0 0 12px; }
-      #title { flex: 1; font-size: 14px; color: var(--muted); margin: 0; }
+      header { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 10px; }
+      #title {
+        flex: 1;
+        min-width: 0;
+        font-size: 12px;
+        line-height: 1.4;
+        color: var(--muted);
+        margin: 0;
+        overflow-wrap: anywhere;
+      }
       #theme {
         flex: none;
-        padding: 4px 10px;
-        font-size: 13px;
+        padding: 3px 8px;
+        font-size: 12px;
         background: var(--surface);
         color: var(--text);
         border: 1px solid var(--border);
@@ -71,15 +80,21 @@
         cursor: pointer;
       }
       #stage {
-        height: 180px;
+        min-height: 140px;
         display: flex;
         align-items: center;
         justify-content: center;
         background: var(--surface);
         border: 1px solid var(--border);
         border-radius: 8px;
-        font-size: 48px;
+        padding: 12px;
+        overflow: hidden;
+      }
+      #word {
+        font-size: 40px;
         font-weight: 600;
+        line-height: 1.2;
+        white-space: nowrap;
       }
       .pivot { color: var(--accent); } /* the letter your eye locks onto */
       #progress { height: 4px; background: var(--track); margin: 8px 0 16px; border-radius: 2px; }

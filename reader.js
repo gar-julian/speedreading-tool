@@ -1,4 +1,4 @@
-// The reader tab: takes the saved HTML, pulls out the text, flashes it.
+// The side panel: takes the page text the service worker saved, and flashes it.
 
 const wordEl = document.getElementById('word');
 const titleEl = document.getElementById('title');
@@ -17,21 +17,91 @@ let timer = null;
 let waitingForParagraph = false;
 let pageTitle = '';
 
-// --- 1. Get the HTML the service worker saved ---------------------------
+// --- 1. Get the text the service worker saved ---------------------------
+// The panel often opens before the capture finishes. It asks the worker for
+// the page (that call waits until the capture is done) and also accepts a
+// later push. A slow "loading" update must not replace the finished text.
 
-chrome.storage.session.get('page').then(({ page }) => {
-  if (!page || page.error || !page.html) {
-    titleEl.textContent = page?.title || '';
-    msgEl.textContent = "Couldn't read that page (Chrome blocks extensions on chrome:// pages and the Web Store).";
+let appliedToken = -1;
+let appliedReady = false;
+
+function applyPage(page) {
+  const token = Number.isFinite(page?.token) ? page.token : appliedToken;
+  if (token < appliedToken) return;
+  if (token === appliedToken && appliedReady && page?.loading) return;
+  appliedToken = token;
+  appliedReady = Boolean(page) && !page.loading;
+
+  // Reset playback for the new page (don't call pause(): it would act on the
+  // old paragraphs and could show a "paragraph done" prompt).
+  clearTimeout(timer);
+  timer = null;
+  waitingForParagraph = false;
+  hidePrompt();
+  playBtn.textContent = 'Play';
+  paragraphs = [];
+  paraIndex = 0;
+  wordIndex = 0;
+  pageTitle = page?.title || '';
+
+  if (page?.loading) {
+    titleEl.textContent = page.title || 'Reading page…';
+    msgEl.textContent = '';
+    show('…');
+    return;
+  }
+
+  paragraphs = pageParagraphs(page);
+  if (!paragraphs.length) {
+    titleEl.textContent = pageTitle;
+    msgEl.textContent = page ? readError(page) : 'Click the extension icon on a page to start reading.';
     show('—');
     return;
   }
 
-  pageTitle = page.title || '';
-  paragraphs = textFromHtml(page.html);
+  msgEl.textContent = '';
   updateTitle();
-  const first = paragraphs[0]?.[0];
-  show(first || '—');
+  show(paragraphs[0][0] || '—');
+}
+
+// Returns an array of paragraphs, each an array of words.
+function pageParagraphs(page) {
+  if (!page || page.loading || page.error) return [];
+  if (typeof page.text === 'string') {
+    return page.text
+      .split(/\n\s*\n/)
+      .map(toWords)
+      .filter((para) => para.length);
+  }
+  if (typeof page.html === 'string') return textFromHtml(page.html);
+  return [];
+}
+
+function readError(page) {
+  const error = page.error || '';
+  if (/cannot access contents|cannot be scripted|extensions gallery|chrome:\/\//i.test(error)) {
+    return "Couldn't read that page (Chrome blocks extensions on chrome:// pages and the Web Store).";
+  }
+  return error || "Couldn't read that page.";
+}
+
+function pullPage() {
+  chrome.runtime.sendMessage({ type: 'get-page' }, (response) => {
+    if (chrome.runtime.lastError) return;
+    applyPage(response?.page);
+  });
+}
+
+pullPage();
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== 'session' || !changes.page) return;
+  if (changes.page.newValue) applyPage(changes.page.newValue);
+  else pullPage();
+});
+
+chrome.runtime.onMessage.addListener((message) => {
+  if (message?.type === 'page-ready') applyPage(message.page);
 });
 
 // --- 2. Turn the HTML string into readable text -------------------------
@@ -94,9 +164,25 @@ function show(word) {
     escape(word.slice(0, p)) +
     `<span class="pivot">${escape(word[p] || '')}</span>` +
     escape(word.slice(p + 1));
+  fitWord();
+}
+
+// The side panel is narrow, so shrink a long word until it fits on one line.
+function fitWord() {
+  const stage = document.getElementById('stage');
+  const max = stage.clientWidth - 24;
+  if (max <= 0) return;
+  let size = 40;
+  wordEl.style.fontSize = size + 'px';
+  while (size > 14 && wordEl.scrollWidth > max) {
+    size -= 1;
+    wordEl.style.fontSize = size + 'px';
+  }
   const total = totalWords();
   barEl.style.width = total ? `${(wordsFinished() / total) * 100}%` : '0';
 }
+
+window.addEventListener('resize', fitWord);
 
 function tick() {
   if (paraIndex >= paragraphs.length) return finish();
