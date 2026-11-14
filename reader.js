@@ -131,6 +131,8 @@ function fitWord() {
     size -= 1;
     wordEl.style.fontSize = size + 'px';
   }
+  // The guide line's gap around the word scales with the font size.
+  wordEl.parentElement.style.setProperty('--word-size', size + 'px');
 }
 
 window.addEventListener('resize', fitWord);
