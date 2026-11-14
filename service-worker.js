@@ -3,6 +3,13 @@
 //   2. open the side panel, also in this turn
 //   3. hand the text to reader.html and stay alive until that finishes
 
+// An older build set openPanelOnActionClick: true, and Chrome remembers that
+// across reloads. While it is on, Chrome opens the panel itself and
+// action.onClicked never fires, so the page is never captured. Turn it off.
+chrome.sidePanel
+  .setPanelBehavior({ openPanelOnActionClick: false })
+  .catch((err) => console.error('Could not set panel behavior', err));
+
 chrome.runtime.onInstalled.addListener(() => {
   chrome.sidePanel.setOptions({ path: 'reader.html', enabled: true });
 });
@@ -12,7 +19,15 @@ let captureToken = 0;
 let captureDone = Promise.resolve();
 
 chrome.action.onClicked.addListener((tab) => {
-  const token = ++captureToken;
+  // Open first, synchronously, while we still have the user gesture.
+  const opened = chrome.sidePanel.open({ windowId: tab.windowId }).catch((err) => {
+    console.error('Could not open the side panel', err);
+  });
+
+  // Chrome kills idle service workers, which would reset a plain counter to 0
+  // while the panel (still open) remembers a higher token and ignores new pages.
+  // A timestamp-based token keeps increasing across worker restarts.
+  const token = (captureToken = Math.max(Date.now(), captureToken + 1));
 
   const reading = chrome.scripting
     .executeScript({ target: { tabId: tab.id }, func: readPageText })
@@ -27,10 +42,6 @@ chrome.action.onClicked.addListener((tab) => {
       title: tab.title,
       error: err && err.message ? err.message : String(err)
     }));
-
-  const opened = chrome.sidePanel.open({ windowId: tab.windowId }).catch((err) => {
-    console.error('Could not open the side panel', err);
-  });
 
   // Return this promise so Chrome does not stop the worker before the text is saved.
   captureDone = publish(token, { token, title: tab.title, loading: true })
