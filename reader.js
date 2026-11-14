@@ -110,21 +110,24 @@ function textFromHtml(html) {
 function show(word) {
   const p = Math.max(0, Math.ceil(word.length / 3) - 1);
   wordEl.innerHTML =
-    escape(word.slice(0, p)) +
+    `<span class="before">${escape(word.slice(0, p))}</span>` +
     `<span class="pivot">${escape(word[p] || '')}</span>` +
-    escape(word.slice(p + 1));
+    `<span class="after">${escape(word.slice(p + 1))}</span>`;
   barEl.style.width = words.length ? `${(index / words.length) * 100}%` : '0';
   fitWord();
 }
 
-// The side panel is narrow, so shrink a long word until it fits on one line.
+// The side panel is narrow, so shrink a long word until the letters on each
+// side of the (fixed, centered) pivot fit in their half of the stage.
 function fitWord() {
-  const stage = document.getElementById('stage');
-  const max = stage.clientWidth - 24;
-  if (max <= 0) return;
+  const before = wordEl.querySelector('.before');
+  const after = wordEl.querySelector('.after');
+  if (!before || !after || wordEl.clientWidth <= 0) return;
+  const overflows = () =>
+    before.scrollWidth > before.clientWidth || after.scrollWidth > after.clientWidth;
   let size = 40;
   wordEl.style.fontSize = size + 'px';
-  while (size > 14 && wordEl.scrollWidth > max) {
+  while (size > 14 && overflows()) {
     size -= 1;
     wordEl.style.fontSize = size + 'px';
   }

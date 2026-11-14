@@ -31,12 +31,19 @@
         padding: 12px;
         overflow: hidden;
       }
+      /* Three columns: the pivot sits in the exact middle of the stage, and the
+         letters before/after it hang off either side, so the red letter never moves. */
       #word {
+        display: flex;
+        width: 100%;
         font-size: 40px;
         font-weight: 600;
         line-height: 1.2;
-        white-space: nowrap;
+        white-space: pre;
       }
+      #word .before, #word .after { flex: 1 1 0; min-width: 0; overflow: hidden; }
+      #word .before { text-align: right; }
+      #word .after { text-align: left; }
       .pivot { color: #d33; } /* the letter your eye locks onto */
       #progress { height: 4px; background: #eee; margin: 8px 0 16px; border-radius: 2px; }
       #bar { height: 100%; width: 0; background: #d33; border-radius: 2px; }
@@ -51,7 +58,7 @@
   <body>
     <p id="title">Loading…</p>
 
-    <div id="stage"><span id="word">Ready</span></div>
+    <div id="stage"><div id="word"><span class="before"></span><span class="pivot">R</span><span class="after">eady</span></div></div>
     <div id="progress"><div id="bar"></div></div>
 
     <div class="row">
