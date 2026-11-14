@@ -164,7 +164,6 @@ function show(word) {
     `<span class="before">${escape(word.slice(0, p))}</span>` +
     `<span class="pivot">${escape(word[p] || '')}</span>` +
     `<span class="after">${escape(word.slice(p + 1))}</span>`;
-  barEl.style.width = words.length ? `${(index / words.length) * 100}%` : '0';
   fitWord();
 }
 

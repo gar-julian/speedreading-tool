@@ -99,7 +99,8 @@
         left: 50%;
         width: 3px;
         transform: translateX(-50%);
-        background: rgba(221, 51, 51, 0.45);
+        background: var(--accent);
+        opacity: 0.45;
         border-radius: 2px;
         pointer-events: none;
       }
@@ -109,7 +110,8 @@
          letters before/after it hang off either side, so the red letter never moves. */
       #word {
         display: flex;
-        width: 100%;        font-size: 40px;
+        width: 100%;
+        font-size: 40px;
         font-weight: 600;
         line-height: 1.2;
         white-space: pre;
@@ -117,9 +119,9 @@
       #word .before, #word .after { flex: 1 1 0; min-width: 0; overflow: hidden; }
       #word .before { text-align: right; }
       #word .after { text-align: left; }
-      .pivot { color: #d33; } /* the letter your eye locks onto */
-      #progress { height: 4px; background: #eee; margin: 8px 0 16px; border-radius: 2px; }
-      #bar { height: 100%; width: 0; background: #d33; border-radius: 2px; }
+      .pivot { color: var(--accent); } /* the letter your eye locks onto */
+      #progress { height: 4px; background: var(--track); margin: 8px 0 16px; border-radius: 2px; }
+      #bar { height: 100%; width: 0; background: var(--accent); border-radius: 2px; }
       .row { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
       button { flex: 1; padding: 10px; font-size: 15px; cursor: pointer; }
       input[type=range] { flex: 1; accent-color: var(--accent); }
