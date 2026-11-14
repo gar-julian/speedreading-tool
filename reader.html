@@ -4,25 +4,38 @@
     <meta charset="utf-8" />
     <title>Speed reader</title>
     <style>
+      * { box-sizing: border-box; }
+      html, body { height: 100%; }
       body {
         font-family: system-ui, sans-serif;
-        max-width: 600px;
-        margin: 60px auto;
-        padding: 0 16px;
+        margin: 0;
+        padding: 12px;
         background: #fafafa;
         color: #222;
       }
-      #title { font-size: 14px; color: #666; margin: 0 0 12px; }
+      #title {
+        font-size: 12px;
+        line-height: 1.4;
+        color: #666;
+        margin: 0 0 10px;
+        overflow-wrap: anywhere;
+      }
       #stage {
-        height: 180px;
+        min-height: 140px;
         display: flex;
         align-items: center;
         justify-content: center;
         background: white;
         border: 1px solid #ddd;
         border-radius: 8px;
-        font-size: 48px;
+        padding: 12px;
+        overflow: hidden;
+      }
+      #word {
+        font-size: 40px;
         font-weight: 600;
+        line-height: 1.2;
+        white-space: nowrap;
       }
       .pivot { color: #d33; } /* the letter your eye locks onto */
       #progress { height: 4px; background: #eee; margin: 8px 0 16px; border-radius: 2px; }

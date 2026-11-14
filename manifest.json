@@ -2,18 +2,22 @@
   "manifest_version": 3,
   "name": "Flashing words at you",
   "version": "1.2",
-  "description": "Saves the page's HTML and flashes its words at you in a new tab.",
+  "description": "Saves the page's HTML and flashes its words at you in the side panel.",
   "minimum_chrome_version": "116",
 
   "action": {
     "default_title": "Speed read this page"
   },
 
+  "side_panel": {
+    "default_path": "reader.html"
+  },
+
   "background": {
     "service_worker": "service-worker.js"
   },
 
-  "permissions": ["activeTab", "scripting", "storage", "downloads"],
+  "permissions": ["activeTab", "scripting", "storage", "sidePanel", "downloads"],
 
   "icons": {
     "16": "hello_extensions.png"
