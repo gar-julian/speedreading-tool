@@ -32,9 +32,17 @@ function applyPage(page) {
   appliedToken = token;
   appliedReady = Boolean(page) && !page.loading;
 
-  pause();
-  index = 0;
-  words = [];
+  // Reset playback for the new page (don't call pause(): it would act on the
+  // old paragraphs and could show a "paragraph done" prompt).
+  clearTimeout(timer);
+  timer = null;
+  waitingForParagraph = false;
+  hidePrompt();
+  playBtn.textContent = 'Play';
+  paragraphs = [];
+  paraIndex = 0;
+  wordIndex = 0;
+  pageTitle = page?.title || '';
 
   if (page?.loading) {
     titleEl.textContent = page.title || 'Reading page…';
@@ -43,25 +51,30 @@ function applyPage(page) {
     return;
   }
 
-  const text = pageText(page);
-  if (!text) {
-    titleEl.textContent = page?.title || '';
+  paragraphs = pageParagraphs(page);
+  if (!paragraphs.length) {
+    titleEl.textContent = pageTitle;
     msgEl.textContent = page ? readError(page) : 'Click the extension icon on a page to start reading.';
     show('—');
     return;
   }
 
   msgEl.textContent = '';
-  words = text.split(/\s+/).filter(Boolean);
-  titleEl.textContent = `${page.title} · ${words.length} words`;
-  show(words[0] || '—');
+  updateTitle();
+  show(paragraphs[0][0] || '—');
 }
 
-function pageText(page) {
-  if (!page || page.loading || page.error) return '';
-  if (typeof page.text === 'string') return page.text;
+// Returns an array of paragraphs, each an array of words.
+function pageParagraphs(page) {
+  if (!page || page.loading || page.error) return [];
+  if (typeof page.text === 'string') {
+    return page.text
+      .split(/\n\s*\n/)
+      .map(toWords)
+      .filter((para) => para.length);
+  }
   if (typeof page.html === 'string') return textFromHtml(page.html);
-  return '';
+  return [];
 }
 
 function readError(page) {
@@ -151,7 +164,6 @@ function show(word) {
     escape(word.slice(0, p)) +
     `<span class="pivot">${escape(word[p] || '')}</span>` +
     escape(word.slice(p + 1));
-  barEl.style.width = words.length ? `${(index / words.length) * 100}%` : '0';
   fitWord();
 }
 

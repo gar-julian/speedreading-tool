@@ -60,7 +60,8 @@ function readPageText() {
   const paragraphs = [...document.querySelectorAll('p')]
     .map((p) => p.textContent.trim().replace(/\s+/g, ' '))
     .filter((t) => t.split(' ').length > 4);
-  if (paragraphs.length) return paragraphs.join(' ');
+  // Blank lines between paragraphs let the reader pause at each break.
+  if (paragraphs.length) return paragraphs.join('\n\n');
 
   const skip = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT']);
   const parts = [];
