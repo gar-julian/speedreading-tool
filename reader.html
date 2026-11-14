@@ -4,48 +4,108 @@
     <meta charset="utf-8" />
     <title>Speed reader</title>
     <style>
+      :root {
+        color-scheme: light;
+        --bg: #fafafa;
+        --text: #222;
+        --muted: #666;
+        --surface: #fff;
+        --border: #ddd;
+        --accent: #d33;
+        --track: #eee;
+        --prompt-bg: #fff6e8;
+        --prompt-border: #e2c08a;
+        --prompt-text: #5c3d08;
+        --error: #a00;
+      }
+      /* Dark: follow the system unless the user picked light explicitly. */
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) {
+          color-scheme: dark;
+          --bg: #121212;
+          --text: #e6e6e6;
+          --muted: #9a9a9a;
+          --surface: #1e1e1e;
+          --border: #333;
+          --accent: #ff5c5c;
+          --track: #2a2a2a;
+          --prompt-bg: #2b2112;
+          --prompt-border: #6b5228;
+          --prompt-text: #f0d29a;
+          --error: #ff7b7b;
+        }
+      }
+      :root[data-theme="dark"] {
+        color-scheme: dark;
+        --bg: #121212;
+        --text: #e6e6e6;
+        --muted: #9a9a9a;
+        --surface: #1e1e1e;
+        --border: #333;
+        --accent: #ff5c5c;
+        --track: #2a2a2a;
+        --prompt-bg: #2b2112;
+        --prompt-border: #6b5228;
+        --prompt-text: #f0d29a;
+        --error: #ff7b7b;
+      }
+
       body {
         font-family: system-ui, sans-serif;
         max-width: 600px;
         margin: 60px auto;
         padding: 0 16px;
-        background: #fafafa;
-        color: #222;
+        background: var(--bg);
+        color: var(--text);
       }
-      #title { font-size: 14px; color: #666; margin: 0 0 12px; }
+      header { display: flex; align-items: center; gap: 12px; margin: 0 0 12px; }
+      #title { flex: 1; font-size: 14px; color: var(--muted); margin: 0; }
+      #theme {
+        flex: none;
+        padding: 4px 10px;
+        font-size: 13px;
+        background: var(--surface);
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        cursor: pointer;
+      }
       #stage {
         height: 180px;
         display: flex;
         align-items: center;
         justify-content: center;
-        background: white;
-        border: 1px solid #ddd;
+        background: var(--surface);
+        border: 1px solid var(--border);
         border-radius: 8px;
         font-size: 48px;
         font-weight: 600;
       }
-      .pivot { color: #d33; } /* the letter your eye locks onto */
-      #progress { height: 4px; background: #eee; margin: 8px 0 16px; border-radius: 2px; }
-      #bar { height: 100%; width: 0; background: #d33; border-radius: 2px; }
+      .pivot { color: var(--accent); } /* the letter your eye locks onto */
+      #progress { height: 4px; background: var(--track); margin: 8px 0 16px; border-radius: 2px; }
+      #bar { height: 100%; width: 0; background: var(--accent); border-radius: 2px; }
       .row { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
       button { flex: 1; padding: 10px; font-size: 15px; cursor: pointer; }
-      input[type=range] { flex: 1; }
+      input[type=range] { flex: 1; accent-color: var(--accent); }
       #prompt {
         margin: 0 0 12px;
         padding: 12px 14px;
-        background: #fff6e8;
-        border: 1px solid #e2c08a;
+        background: var(--prompt-bg);
+        border: 1px solid var(--prompt-border);
         border-radius: 8px;
         font-size: 15px;
         line-height: 1.4;
-        color: #5c3d08;
+        color: var(--prompt-text);
       }
       #prompt[hidden] { display: none; }
-      #msg { font-size: 14px; color: #a00; }
+      #msg { font-size: 14px; color: var(--error); }
     </style>
   </head>
   <body>
-    <p id="title">Loading…</p>
+    <header>
+      <p id="title">Loading…</p>
+      <button id="theme" type="button">Dark mode</button>
+    </header>
 
     <div id="stage"><span id="word">Ready</span></div>
     <div id="progress"><div id="bar"></div></div>

@@ -210,6 +210,38 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+// --- Theme --------------------------------------------------------------
+// Follows the system setting until the user clicks the toggle; the choice
+// is remembered in localStorage (synchronous, so no flash of the wrong theme).
+
+const themeBtn = document.getElementById('theme');
+const systemDark = window.matchMedia('(prefers-color-scheme: dark)');
+
+function savedTheme() {
+  try { return localStorage.getItem('theme'); } catch { return null; }
+}
+
+function isDark() {
+  const t = savedTheme();
+  return t ? t === 'dark' : systemDark.matches;
+}
+
+function applyTheme() {
+  const t = savedTheme();
+  if (t) document.documentElement.dataset.theme = t;
+  else delete document.documentElement.dataset.theme;
+  themeBtn.textContent = isDark() ? 'Light mode' : 'Dark mode';
+}
+
+themeBtn.addEventListener('click', () => {
+  try { localStorage.setItem('theme', isDark() ? 'light' : 'dark'); } catch {}
+  applyTheme();
+  themeBtn.blur(); // keep Space for play/pause
+});
+
+systemDark.addEventListener('change', applyTheme);
+applyTheme();
+
 function escape(s) {
   return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
