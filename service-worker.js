@@ -18,6 +18,9 @@ chrome.runtime.onInstalled.addListener(() => {
     title: 'Open side panel',   // extension name
     contexts: ['all']
   });
+
+  // NEW: clicking the extension's toolbar icon also opens the side panel.
+  chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
 });
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
