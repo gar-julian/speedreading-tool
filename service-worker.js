@@ -54,15 +54,17 @@ function startCapture(tab, fromClick) {
       return text
         ? {
             token,
+            tabId: tab.id,
             title: tab.title,
             text,
             startParagraph: read.startParagraph || 0,
             startWord: read.startWord || 0
           }
-        : { token, title: tab.title, error: 'This page did not have any readable text.' };
+        : { token, tabId: tab.id, title: tab.title, error: 'This page did not have any readable text.' };
     })
     .catch((err) => ({
       token,
+      tabId: tab.id,
       title: tab.title,
       error: err && err.message ? err.message : String(err)
     }));
@@ -92,9 +94,16 @@ function readPageText(fromClick) {
     node.contains(target) ||
     Boolean(target.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING);
 
+  // Clear any highlight left over from an earlier read of this page.
+  document
+    .querySelectorAll('.speedread-current')
+    .forEach((el) => el.classList.remove('speedread-current'));
+
   const paragraphs = [...document.querySelectorAll('p')]
     .map((el) => ({ el, text: el.textContent.trim().replace(/\s+/g, ' ') }))
     .filter((p) => p.text.split(' ').length > 4);
+  // context-target.js (same isolated world) highlights these by index.
+  window.__speedreadParagraphs = paragraphs.map((p) => p.el);
   if (paragraphs.length) {
     let startParagraph = 0;
     if (target) {
@@ -105,6 +114,7 @@ function readPageText(fromClick) {
     return { text: paragraphs.map((p) => p.text).join('\n\n'), startParagraph, startWord: 0 };
   }
 
+  window.__speedreadParagraphs = []; // no paragraph elements to highlight
   const skip = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT']);
   const parts = [];
   let startWord = 0;

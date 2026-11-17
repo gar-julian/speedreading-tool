@@ -16,6 +16,8 @@ let wordIndex = 0;
 let timer = null;
 let waitingForParagraph = false;
 let pageTitle = '';
+let tabId = null;
+let highlightedIndex = -1;
 
 // --- 1. Get the text the service worker saved ---------------------------
 // The panel often opens before the capture finishes. It asks the worker for
@@ -43,6 +45,8 @@ function applyPage(page) {
   paraIndex = 0;
   wordIndex = 0;
   pageTitle = page?.title || '';
+  tabId = Number.isInteger(page?.tabId) ? page.tabId : null;
+  highlightedIndex = -1;
 
   if (page?.loading) {
     titleEl.textContent = page.title || 'Reading page…';
@@ -173,6 +177,17 @@ function show(word) {
     `<span class="pivot">${escape(word[p] || '')}</span>` +
     `<span class="after">${escape(word.slice(p + 1))}</span>`;
   fitWord();
+  if (paragraphs.length) highlight(paraIndex);
+}
+
+// Marks the paragraph being read on the page itself (see context-target.js).
+// Pass -1 to clear it. Only messages the tab when the paragraph changes.
+function highlight(index) {
+  if (tabId === null || index === highlightedIndex) return;
+  highlightedIndex = index;
+  chrome.tabs.sendMessage(tabId, { type: 'speedread-highlight', index }).catch(() => {
+    // No content script (e.g. the tab was open before the extension loaded).
+  });
 }
 
 // The side panel is narrow, so shrink a long word until the letters on each
@@ -268,6 +283,7 @@ function finish() {
   timer = null;
   waitingForParagraph = false;
   playBtn.textContent = 'Play';
+  highlight(-1);
   updateTitle();
   showPrompt('Finished. Press Play to read it again.');
 }
