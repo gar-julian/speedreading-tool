@@ -1,38 +1,59 @@
-const button = new DOMParser().parseFromString(
-  '<button>Click to open side panel</button>',
-  'text/html'
-).body.firstElementChild;
-button.addEventListener('click', function () {
-  chrome.runtime.sendMessage({ type: 'open_side_panel' });
-});
-document.body.append(button);
+// content-script.js — runs on web pages and hands the page's text to the side panel as "chunks".
 
-// adding a visual banner that yells at user to extend panel
+const MIN_WORDS_PER_CHUNK = 4; // ignores tiny fragments like "Share" or captions
 
-const banner = document.createElement('div');
-banner.textContent = 'OPEN THE SIDE PANEL! CLICK ME!';
-Object.assign(banner.style, {
-  position: 'fixed',
-  top: '0',
-  left: '0',
-  right: '0',
-  zIndex: '2147483647',
-  padding: '16px',
-  background: 'red',
-  color: 'white',
-  fontSize: '28px',
-  fontWeight: 'bold',
-  textAlign: 'center',
-  cursor: 'pointer',
-  display: 'none'
-});
-banner.addEventListener('click', () => {
-  chrome.runtime.sendMessage({ type: 'open_side_panel' });
-  banner.style.display = 'none';
-});
-document.body.append(banner);
+// A chunk is one paragraph, list item, or block quote.
+// Headings are attached to the start of the chunk that follows them.
+const BLOCKS = 'h1,h2,h3,h4,h5,h6,p,li,blockquote';
+const IGNORE = 'nav,footer,aside,form,script,style,noscript,[aria-hidden="true"]';
 
-setInterval(async () => {
-  const { open } = await chrome.runtime.sendMessage({ type: 'check_side_panel' });
-  banner.style.display = open ? 'none' : 'block';
-}, 15000);
+function isVisible(el) {
+  return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+}
+
+function extractChunks(root) {
+  const chunks = [];
+  let pendingHeading = '';
+
+  for (const el of root.querySelectorAll(BLOCKS)) {
+    if (el.closest(IGNORE) || !isVisible(el)) continue;
+    // Skip wrappers (like an <li> that holds a <p>); the inner element is used instead.
+    if (el.querySelector(BLOCKS)) continue;
+
+    const text = el.innerText.replace(/\s+/g, ' ').trim();
+    if (!text) continue;
+
+    if (/^H[1-6]$/.test(el.tagName)) {
+      pendingHeading = text;
+      continue;
+    }
+
+    if (text.split(' ').length < MIN_WORDS_PER_CHUNK) continue;
+
+    chunks.push(pendingHeading ? `${pendingHeading} ${text}` : text);
+    pendingHeading = '';
+  }
+  return chunks;
+}
+
+function getChunks() {
+  // Prefer the article body; fall back to the whole page.
+  const roots = [
+    document.querySelector('article'),
+    document.querySelector('main, [role="main"]'),
+    document.body
+  ];
+  for (const root of roots) {
+    if (!root) continue;
+    const chunks = extractChunks(root);
+    if (chunks.length) return chunks;
+  }
+  return [];
+}
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'get_chunks') {
+    sendResponse({ chunks: getChunks() });
+  }
+  // No async work, so nothing else to return.
+});
