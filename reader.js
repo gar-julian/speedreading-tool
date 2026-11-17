@@ -59,9 +59,17 @@ function applyPage(page) {
     return;
   }
 
+  // "Speed read from here" puts the reader at the right-clicked spot.
+  paraIndex = clamp(page.startParagraph, paragraphs.length - 1);
+  wordIndex = clamp(page.startWord, paragraphs[paraIndex].length - 1);
+
   msgEl.textContent = '';
   updateTitle();
-  show(paragraphs[0][0] || '—');
+  show(paragraphs[paraIndex][wordIndex] || '—');
+}
+
+function clamp(n, max) {
+  return Number.isInteger(n) ? Math.min(Math.max(n, 0), Math.max(max, 0)) : 0;
 }
 
 // Returns an array of paragraphs, each an array of words.

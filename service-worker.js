@@ -10,15 +10,32 @@ chrome.sidePanel
   .setPanelBehavior({ openPanelOnActionClick: false })
   .catch((err) => console.error('Could not set panel behavior', err));
 
+const MENU_ID = 'speedread-from-here';
+
 chrome.runtime.onInstalled.addListener(() => {
   chrome.sidePanel.setOptions({ path: 'reader.html', enabled: true });
+  chrome.contextMenus.removeAll(() => {
+    chrome.contextMenus.create({
+      id: MENU_ID,
+      title: 'Speed read from here',
+      contexts: ['page', 'selection', 'link']
+    });
+  });
 });
 
 let latestPage = null;
 let captureToken = 0;
 let captureDone = Promise.resolve();
 
-chrome.action.onClicked.addListener((tab) => {
+chrome.action.onClicked.addListener((tab) => startCapture(tab, false));
+
+// Right-click -> "Speed read from here" starts at the paragraph that was clicked.
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  if (info.menuItemId !== MENU_ID || !tab) return;
+  return startCapture(tab, true);
+});
+
+function startCapture(tab, fromClick) {
   // Open first, synchronously, while we still have the user gesture.
   const opened = chrome.sidePanel.open({ windowId: tab.windowId }).catch((err) => {
     console.error('Could not open the side panel', err);
@@ -30,11 +47,18 @@ chrome.action.onClicked.addListener((tab) => {
   const token = (captureToken = Math.max(Date.now(), captureToken + 1));
 
   const reading = chrome.scripting
-    .executeScript({ target: { tabId: tab.id }, func: readPageText })
+    .executeScript({ target: { tabId: tab.id }, func: readPageText, args: [fromClick] })
     .then(([result]) => {
-      const text = result && typeof result.result === 'string' ? result.result.trim() : '';
+      const read = result && result.result;
+      const text = read && typeof read.text === 'string' ? read.text.trim() : '';
       return text
-        ? { token, title: tab.title, text }
+        ? {
+            token,
+            title: tab.title,
+            text,
+            startParagraph: read.startParagraph || 0,
+            startWord: read.startWord || 0
+          }
         : { token, title: tab.title, error: 'This page did not have any readable text.' };
     })
     .catch((err) => ({
@@ -53,18 +77,38 @@ chrome.action.onClicked.addListener((tab) => {
     });
 
   return captureDone;
-});
+}
 
 // Runs in the page. Must be self-contained: Chrome copies only this function.
-function readPageText() {
+// Returns { text, startParagraph, startWord }. When fromClick is set, the start
+// points at the element context-target.js saw being right-clicked.
+function readPageText(fromClick) {
+  let target = fromClick ? window.__speedreadTarget : null;
+  if (target && !target.isConnected) target = null;
+
+  // True if node is the target, inside it, or comes after it in the page.
+  const atOrAfterTarget = (node) =>
+    node === target ||
+    node.contains(target) ||
+    Boolean(target.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING);
+
   const paragraphs = [...document.querySelectorAll('p')]
-    .map((p) => p.textContent.trim().replace(/\s+/g, ' '))
-    .filter((t) => t.split(' ').length > 4);
-  // Blank lines between paragraphs let the reader pause at each break.
-  if (paragraphs.length) return paragraphs.join('\n\n');
+    .map((el) => ({ el, text: el.textContent.trim().replace(/\s+/g, ' ') }))
+    .filter((p) => p.text.split(' ').length > 4);
+  if (paragraphs.length) {
+    let startParagraph = 0;
+    if (target) {
+      const i = paragraphs.findIndex((p) => atOrAfterTarget(p.el));
+      startParagraph = i === -1 ? paragraphs.length - 1 : i;
+    }
+    // Blank lines between paragraphs let the reader pause at each break.
+    return { text: paragraphs.map((p) => p.text).join('\n\n'), startParagraph, startWord: 0 };
+  }
 
   const skip = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT']);
   const parts = [];
+  let startWord = 0;
+  let found = !target;
   const root = document.body || document.documentElement;
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   let node;
@@ -72,9 +116,12 @@ function readPageText() {
     const parent = node.parentElement;
     if (parent && skip.has(parent.tagName)) continue;
     const bit = node.textContent.replace(/\s+/g, ' ').trim();
-    if (bit) parts.push(bit);
+    if (!bit) continue;
+    if (!found && atOrAfterTarget(node)) found = true;
+    if (!found) startWord += bit.split(' ').length;
+    parts.push(bit);
   }
-  return parts.join(' ');
+  return { text: parts.join(' '), startParagraph: 0, startWord: found ? startWord : 0 };
 }
 
 async function publish(token, page) {

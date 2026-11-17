@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Flashing words at you",
-  "version": "1.2",
+  "version": "1.3",
   "description": "Saves the page's HTML and flashes its words at you in the side panel.",
   "minimum_chrome_version": "116",
 
@@ -17,7 +17,15 @@
     "service_worker": "service-worker.js"
   },
 
-  "permissions": ["activeTab", "scripting", "storage", "sidePanel", "downloads"],
+  "permissions": ["activeTab", "scripting", "storage", "sidePanel", "downloads", "contextMenus"],
+
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["context-target.js"],
+      "run_at": "document_start"
+    }
+  ],
 
   "icons": {
     "16": "hello_extensions.png"
