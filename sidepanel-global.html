@@ -1,9 +1,124 @@
 <!doctype html>
 <html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body {
+        margin: 0;
+        padding: 16px;
+        font-family: system-ui, sans-serif;
+        color: #1f2933;
+      }
+      h1 {
+        font-size: 20px;
+        margin: 0 0 8px;
+      }
+      p {
+        margin: 0 0 16px;
+        font-size: 14px;
+        color: #52606d;
+      }
+      label {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 14px;
+      }
+      input[type='range'] {
+        width: 100%;
+        margin: 0 0 14px;
+      }
+      button {
+        padding: 10px 18px;
+        font-size: 15px;
+        border: 0;
+        border-radius: 6px;
+        background: #2f5d8a;
+        color: #fff;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #264b70;
+      }
+      button.secondary {
+        background: #e4e9ee;
+        color: #1f2933;
+      }
+      button.secondary:hover {
+        background: #d3dae1;
+      }
+      button:focus-visible,
+      input:focus-visible {
+        outline: 3px solid #9cc3e6;
+        outline-offset: 2px;
+      }
+      #start {
+        width: 100%;
+      }
+      #status {
+        min-height: 18px;
+        margin: 10px 0 0;
+        font-size: 13px;
+        color: #a33;
+      }
+      #progress {
+        margin: 0 0 12px;
+        font-size: 14px;
+        color: #52606d;
+      }
+      #stage {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 140px;
+        padding: 0 8px;
+        text-align: center;
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: 44px;
+        line-height: 1.2;
+        overflow-wrap: anywhere;
+      }
+      #stage.message {
+        font-size: 26px;
+      }
+      #prompt {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin: 8px 0 16px;
+      }
+      #stop {
+        display: block;
+        margin: 0 auto;
+      }
+    </style>
+  </head>
   <body>
     <h1>Global side panel</h1>
     <p>
       This is a global side panel, which means it remains open on every tab.
     </p>
+
+    <!-- Reader: settings screen -->
+    <section id="settings">
+      <label for="wpm">
+        Speed: <strong><span id="wpmValue">40</span> words per minute</strong>
+      </label>
+      <input id="wpm" type="range" min="20" max="60" step="1" value="40" />
+      <button id="start" type="button">Start reading this page</button>
+      <p id="status" role="alert"></p>
+    </section>
+
+    <!-- Reader: reading screen -->
+    <section id="player" hidden>
+      <div id="progress"></div>
+      <div id="stage" aria-live="off"></div>
+      <div id="prompt" hidden>
+        <button id="repeat" type="button">Repeat (R)</button>
+        <button id="next" type="button">Next chunk (N)</button>
+      </div>
+      <button id="stop" class="secondary" type="button">Stop (Esc)</button>
+    </section>
+
+    <script src="sidepanel.js"></script>
   </body>
 </html>
