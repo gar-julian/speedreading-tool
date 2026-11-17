@@ -10,10 +10,13 @@
   "side_panel": {
     "default_path": "sidepanel-global.html"
   },
+  "action": {
+    "default_title": "Read in a Flash"
+  },
   "content_scripts": [
     {
       "js": ["content-script.js"],
-      "matches": ["https://www.google.com/*"]
+      "matches": ["http://*/*", "https://*/*"]
     }
   ],
   "permissions": ["sidePanel", "contextMenus"],
