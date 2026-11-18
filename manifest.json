@@ -1,25 +1,31 @@
 {
   "manifest_version": 3,
-  "name": "Read in a Flash",
-  "version": "1.0",
-  "description": "Shows how to call sidePanel.open() to open a global side panel.",
+  "name": "Flashing words at you",
+  "version": "1.3",
+  "description": "Saves the page's HTML and flashes its words at you in the side panel.",
   "minimum_chrome_version": "116",
+
+  "action": {
+    "default_title": "Speed read this page"
+  },
+
+  "side_panel": {
+    "default_path": "reader.html"
+  },
+
   "background": {
     "service_worker": "service-worker.js"
   },
-  "side_panel": {
-    "default_path": "sidepanel-global.html"
-  },
-  "action": {
-    "default_title": "Read in a Flash"
-  },
+  "permissions": ["activeTab", "scripting", "storage", "sidePanel", "downloads", "contextMenus"],
+
   "content_scripts": [
     {
-      "js": ["content-script.js"],
-      "matches": ["http://*/*", "https://*/*"]
+      "matches": ["<all_urls>"],
+      "js": ["context-target.js"],
+      "run_at": "document_start"
     }
   ],
-  "permissions": ["sidePanel", "contextMenus"],
+
   "icons": {
     "16": "hello_extensions.png"
   }
