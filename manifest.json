@@ -16,7 +16,6 @@
   "background": {
     "service_worker": "service-worker.js"
   },
-
   "permissions": ["activeTab", "scripting", "storage", "sidePanel", "downloads", "contextMenus"],
 
   "content_scripts": [

@@ -21,6 +21,9 @@ chrome.runtime.onInstalled.addListener(() => {
       contexts: ['page', 'selection', 'link']
     });
   });
+
+  // NEW: clicking the extension's toolbar icon also opens the side panel.
+  chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
 });
 
 let latestPage = null;
